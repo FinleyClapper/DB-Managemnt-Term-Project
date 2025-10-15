@@ -1,0 +1,3 @@
+Kaggle
+pandas
+python-dotenv
