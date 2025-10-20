@@ -1,3 +1,5 @@
 Kaggle
 pandas
 python-dotenv
+flask
+flask_sqlalchemy
