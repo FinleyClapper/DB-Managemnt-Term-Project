@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rhythmix</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<footer>
+    <p>&copy; {{ current_year or 2025 }} Rhythmix</p>
+</footer>
+<body>
+    <header>
+        <h1>RHYTHMIX</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('search') }}">Search</a>
+            <a href="{{ url_for('add_song') }}">Add Song</a>
+            <a href="{{ url_for('playlist') }}">Playlist</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

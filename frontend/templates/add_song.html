@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Add a new song</h2>
+<form method="POST">
+    <label for="title">Song title:</label>
+    <input type="text" name="title" id="title" required>
+    
+    <label for="duration">Duration (seconds):</label>
+    <input type="number" name="duration" id="duration" required>
+    
+    <label for="genre">Genre:</label>
+    <input type="text" name="genre" id="genre" required>
+    
+    <button type="submit">Add song</button>
+</form>
+{% endblock %}

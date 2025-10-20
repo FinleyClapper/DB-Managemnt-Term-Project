@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Create a Playlist</h2>
+<form method="POST">
+    <label for="name">Playlist Name:</label>
+    <input type="text" name="name" id="name" required>
+    
+    <h3>Select Songs:</h3>
+    {% for song in songs %}
+        <div>
+            <input type="checkbox" name="songs" value="{{ song.id }}" id="song{{ song.id }}">
+            <label for="song{{ song.id }}">{{ song.title }} by {{ song.artist }}</label>
+        </div>
+    {% endfor %}
+    
+    <button type="submit">Create Playlist</button>
+</form>
+
+<h3>Existing Playlists:</h3>
+<ul>
+    {% for pl in Playlist.query.all() %}
+        <li>{{ pl.name }} - {{ pl.songs|length }} songs</li>
+    { % endfor %}
+</ul>
+{% endblock %}

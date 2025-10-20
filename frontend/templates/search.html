@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Search songs</h2>
+<form method="POST">
+    <label>
+        <input type="text" name="query" placeholder="Enter song title or artist name" required>
+    </label>
+        <button type="submit">Search</button>
+</form>
+
+{% if results %}
+    <h3>Results:</h3>
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Artist</th>
+            <th>Genre</th>
+            <th>Duration</th>
+        </tr>
+        {% for song in results %}
+            <tr>
+                <td>{{ song.title }}</td>
+                <td>{{ song.artist }}</td>
+                <td>{{ song.genre or 'N/A' }}</td>
+                <td>{{ song.duration }} sec</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+{% endblock %}
