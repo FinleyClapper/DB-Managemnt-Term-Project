@@ -37,9 +37,9 @@ def index():
     filtered = df[df['track_genre'] == selected_genre] if selected_genre else df
     return render_template(
         'index.html',
-          genres=genres, 
-          tracks=filtered[['track_name', 'artists', 'track_genre']].dropna().to_dict(orient='records'),
-          selected_genre=selected_genre
+        genres=genres, 
+        tracks=filtered[['track_name', 'artists', 'track_genre']].dropna().to_dict(orient='records'),
+        selected_genre=selected_genre
     )
 
 # Flask serves "search.html" template When someone visits /search
