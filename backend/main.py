@@ -1,11 +1,13 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
-import pandas as pd
-import os
-from kaggle.api.kaggle_api_extended import KaggleApi
-
 #Load environment variables from .env file
 load_dotenv()
+import pandas as pd
+import os
+#CHECK KAGGLE CONFIG
+if not os.getenv("KAGGLE_CONFIG_DIR"):
+    print("⚠️ Warning: KAGGLE_CONFIG_DIR is not set. Please configure it before running.")
+from kaggle.api.kaggle_api_extended import KaggleApi
 
 #Tell flash where to find templates and static files.
 app = Flask(
@@ -51,8 +53,9 @@ def add_song():
 @app.route('/playlist')
 def playlist():
     return render_template('playlist.html')  # Create this file too
-@app.route('/add_song', methods=['GET', 'POST'])
-def add_song():
+
+#@app.route('/add_song', methods=['GET', 'POST'])
+#def add_song():
     if request.method == 'POST':
         # Call logic teammate’s function here
         return redirect(url_for('index'))
