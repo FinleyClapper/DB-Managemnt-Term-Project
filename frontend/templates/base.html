@@ -12,18 +12,21 @@
     <header>
         <h1>RHYTHMIX</h1>
         <nav class="navbar">
-            <div class="nav-links">
-            <a href="{{ url_for('index') }}">Home</a>
-            <!--COMMENTING THIS PART OUT BECAUSE    -->
-            <a href="{{ url_for('search') }}">Search</a>
-            <a href="{{ url_for('add_song') }}">Add Song</a>
-            <a href="{{ url_for('playlist') }}">Playlist</a>
+            <div class="navbar-left">
+                <a href="{{ url_for('index') }}" class="btn">Home</a>
+                <a href="{{ url_for('search') }}" class="btn">Search</a>
+                <a href="{{ url_for('playlist') }}" class="btn">Playlists</a>
             </div>
-            <div class="nav-auth">
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}">Register</a>
+            <div class="navbar-right">
+                <!-- Show these only if user is logged in -->
+                <a href="{{ url_for('account') }}" class="btn">Account</a>
+
+                <!-- Login/Register (hidden when user is logged in) -->
+                <a href="{{ url_for('login') }}" class="btn">Login</a>
+                <a href="{{ url_for('register') }}" class="btn">Register</a>
             </div>
         </nav>
+
     </header>
     <main>
         {% block content %}{% endblock %}
