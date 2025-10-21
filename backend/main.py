@@ -1,8 +1,7 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 import pandas as pd
-import os
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 #Load environment variables from .env file
@@ -29,6 +28,8 @@ print("Shape:", df.shape)
 print("Columns:", df.columns.tolist())
 #print(df.head())
 
+playlists = []
+
 #define routes
 @app.route('/')
 def index():
@@ -43,13 +44,29 @@ def index():
     )
 
 # Flask serves "search.html" template When someone visits /search
-@app.route('/search')
+@app.route('/search', methods=['GET', 'POST'])
 def search():
-    return render_template('search.html')
+    results = []
+    if request.method == 'POST':
+        query = request.form.get('query', '').lower()
+        results_df = df[df['track_name'].str.lower().str.contains(query) | df['artists'].str.lower().str.contains(query)]
+        results = results_df[['track_name','artists','track_genre','duration_ms']].rename(
+            columns={'track_name':'title','artists':'artist','track_genre':'genre','duration_ms':'duration'}
+        ).to_dict(orient='records')
+        # Convert duration from ms to sec
+        for r in results:
+            r['duration'] = int(r['duration'] / 1000)
+    return render_template('search.html', results=results)
 
-@app.route('/playlist')
+@app.route('/playlist', methods=['GET', 'POST'])
 def playlist():
-    return render_template('playlist.html')  # Create this file too
+    if request.method == 'POST':
+        name = request.form.get('name')
+        selected_songs = request.form.getlist('songs')
+        playlist_songs = [s for s in df.to_dict(orient='records') if str(s.get('track_id')) in selected_songs]
+        playlists.append({'name': name, 'songs': playlist_songs})
+        return redirect(url_for('playlist'))
+    return render_template('playlist.html', songs=df.to_dict(orient='records'), playlists=playlists)  # Create this file too
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
     if request.method == 'POST':
