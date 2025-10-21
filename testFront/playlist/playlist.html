@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Playlists - Rhythmix</title>
+    <link rel="stylesheet" type="text/css" href="./playlist.css">
+</head>
+<body>
+    <div class="header">
+        <h2>🎵 Manage Playlists</h2>
+        <a href="../index/index.html" class="back-btn">← Back to Home</a>
+    </div>
+
+    <div class="create-playlist-section">
+        <h3>Create New Playlist</h3>
+        <div class="input-group">
+            <input type="text" id="playlistName" placeholder="Enter playlist name">
+            <input type="text" id="playlistDescription" placeholder="Description (optional)">
+            <button onclick="createPlaylist()">Create Playlist</button>
+        </div>
+    </div>
+    <h3>Your Playlists</h3>
+    <div id="playlistsGrid" class="playlists-grid">
+        <div class="loading">Loading playlists...</div>
+    </div>
+    <div id="playlistDetails" style="display: none;">
+        <div class="playlist-details">
+            <h3 id="selectedPlaylistName"></h3>
+            <p id="selectedPlaylistDesc" style="color: #b3b3b3;"></p>
+            
+            <!-- Add Songs Section -->
+            <div class="add-song-section">
+                <h4 style="color: #1DB954; margin-top: 0;">Add Songs to Playlist</h4>
+                <div class="input-group">
+                    <input type="text" id="songSearchInput" placeholder="Search for songs to add">
+                    <button onclick="searchSongsToAdd()">Search</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
+            <!-- Songs in Playlist -->
+            <div class="songs-list">
+                <h4 style="color: #1DB954;">Songs in this playlist</h4>
+                <div id="playlistSongs"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src = './playlist.js'>
+        
+    </script>
+</body>
+</html>
