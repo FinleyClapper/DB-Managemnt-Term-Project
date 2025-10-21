@@ -11,13 +11,14 @@
 <body>
     <header>
         <h1>RHYTHMIX</h1>
-        <nav>
+        <nav class="navbar">
+            <div class="nav-links">
             <a href="{{ url_for('index') }}">Home</a>
             <!--COMMENTING THIS PART OUT BECAUSE    -->
             <a href="{{ url_for('search') }}">Search</a>
             <a href="{{ url_for('add_song') }}">Add Song</a>
             <a href="{{ url_for('playlist') }}">Playlist</a>
-            
+            </div>
             <div class="nav-auth">
                 <a href="{{ url_for('login') }}">Login</a>
                 <a href="{{ url_for('register') }}">Register</a>
