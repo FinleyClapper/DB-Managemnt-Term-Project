@@ -46,9 +46,7 @@ def index():
 @app.route('/search')
 def search():
     return render_template('search.html')
-@app.route('/add_song')
-def add_song():
-    return render_template('add_song.html')  # Create this file in templates
+
 @app.route('/playlist')
 def playlist():
     return render_template('playlist.html')  # Create this file too
