@@ -17,10 +17,19 @@
             <a href="{{ url_for('search') }}">Search</a>
             <a href="{{ url_for('add_song') }}">Add Song</a>
             <a href="{{ url_for('playlist') }}">Playlist</a>
+            
+            <div class="nav-auth">
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
+            </div>
         </nav>
     </header>
     <main>
         {% block content %}{% endblock %}
     </main>
+
+    <footer>
+        <p>&copy; 2025 Rhythmix. All rights reserved.</p>
+    </footer>
 </body>
 </html>

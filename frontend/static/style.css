@@ -161,3 +161,47 @@ footer {
     padding: 0.8rem 0;
     font-size: 0.9rem;
 }
+
+/*--------------- Register/Login ----------------------*/
+.auth-container {
+    width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.auth-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.auth-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-container input {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.auth-container button {
+    background-color: #1db954;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.auth-container button:hover {
+    background-color: #17a74a;
+}
+
+.auth-container p {
+    text-align: center;
+}
