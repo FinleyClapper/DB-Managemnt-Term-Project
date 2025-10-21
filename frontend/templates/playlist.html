@@ -2,25 +2,66 @@
 
 {% block content %}
 <h2>Create a Playlist</h2>
-<form method="POST">
+
+<!-- Playlist creation form -->
+<form method="POST" class="form-container">
     <label for="name">Playlist Name:</label>
-    <input type="text" name="name" id="name" required>
-
-    <h3>Select Songs:</h3>
-    {% for song in songs %}
-    <div>
-        <input type="checkbox" name="songs" value="{{ song.id }}" id="song{{ song.id }}">
-        <label for="song{{ song.id }}">{{ song.track_name }} by {{ song.artists }}</label>
-    </div>
-    {% endfor %}
-
-    <button type="submit">Create Playlist</button>
+    <input type="text" id="name" name="name" placeholder="Enter playlist name" required>
+    <button type="submit" class="btn">Create Playlist</button>
 </form>
 
-<h3>Existing Playlists:</h3>
+<hr>
+
+<!-- Genre filter -->
+<h3>Browse Songs by Genre</h3>
+<form method="GET" action="{{ url_for('playlist') }}">
+    <label for="genre">Select Genre:</label>
+    <select name="genre" id="genre" onchange="this.form.submit()">
+        <option value="">All Genres</option>
+        {% for genre in genres %}
+        <option value="{{ genre }}" {% if selected_genre == genre %}selected{% endif %}>{{ genre }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<!-- Song search -->
+<form method="GET" action="{{ url_for('playlist') }}" class="search-form">
+    <input type="text" name="query" placeholder="Search by song title or artist" value="{{ query or '' }}">
+    <button type="submit" class="btn">Search</button>
+</form>
+
+<hr>
+
+<!-- Songs list -->
+<h3>Available Songs{% if selected_genre %} ({{ selected_genre }}){% endif %}</h3>
+<table>
+    <tr>
+        <th>Select</th>
+        <th>Track Name</th>
+        <th>Artist</th>
+        <th>Genre</th>
+    </tr>
+    {% for song in songs %}
+    <tr>
+        <td><input type="checkbox" name="songs" value="{{ song.track_name }}"></td>
+        <td>{{ song.track_name }}</td>
+        <td>{{ song.artists }}</td>
+        <td>{{ song.track_genre }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<hr>
+
+<!-- Saved playlists -->
+<h3>Your Playlists</h3>
 <ul>
     {% for pl in playlists %}
-    <li>{{ pl.name }} - {{ pl.songs|length }} songs</li>
+    <li>
+        <strong>{{ pl.name }}</strong> — {{ pl.songs|length }} songs
+    </li>
+    {% else %}
+    <li>No playlists yet. Create one above!</li>
     {% endfor %}
 </ul>
 {% endblock %}

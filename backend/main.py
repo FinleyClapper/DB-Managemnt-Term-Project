@@ -60,13 +60,46 @@ def search():
 
 @app.route('/playlist', methods=['GET', 'POST'])
 def playlist():
+    # Playlist creation (basic placeholder for now)
     if request.method == 'POST':
         name = request.form.get('name')
-        selected_songs = request.form.getlist('songs')
-        playlist_songs = [s for s in df.to_dict(orient='records') if str(s.get('track_id')) in selected_songs]
-        playlists.append({'name': name, 'songs': playlist_songs})
+        # Save to DB or mock list later
+        print(f"Created playlist: {name}")
+        # You could store playlists in a global or session for now
         return redirect(url_for('playlist'))
-    return render_template('playlist.html', songs=df.to_dict(orient='records'), playlists=playlists)  # Create this file too
+
+    # Filters
+    selected_genre = request.args.get('genre')
+    query = request.args.get('query')
+
+    # Get genres
+    genres = sorted(df['track_genre'].dropna().unique())
+
+    # Filter dataset
+    filtered = df.copy()
+    if selected_genre:
+        filtered = filtered[filtered['track_genre'] == selected_genre]
+    if query:
+        filtered = filtered[
+            filtered['track_name'].str.contains(query, case=False, na=False)
+            | filtered['artists'].str.contains(query, case=False, na=False)
+            ]
+
+    # Dummy playlists for now
+    playlists = [
+        {'name': 'My Chill Mix', 'songs': ['Song A', 'Song B']},
+        {'name': 'Workout Vibes', 'songs': ['Track X', 'Track Y', 'Track Z']},
+    ]
+
+    return render_template(
+        'playlist.html',
+        genres=genres,
+        selected_genre=selected_genre,
+        query=query,
+        songs=filtered[['track_name', 'artists', 'track_genre']].dropna().to_dict(orient='records'),
+        playlists=playlists
+    )
+
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
     if request.method == 'POST':
