@@ -3,6 +3,7 @@ from sqlalchemy import *
 import pandas as pd
 import kagglehub
 from flask_cors import CORS
+metadata = MetaData()
 path = kagglehub.dataset_download("maharshipandya/-spotify-tracks-dataset")
 app = Flask(__name__)
 CORS(app)
@@ -41,7 +42,39 @@ def search_genre():
     songs = pd.read_sql(querry,eng,params=params)
     songs = songs.drop_duplicates(subset=['artists', 'track_name'], keep='first')
     return jsonify(songs.to_dict(orient="records"))
-@app.route("/api/edit/genre")
-def edit_genre():
-    pass
+users = Table(
+    "users",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("username", String, unique=True, nullable=False),
+    Column("email", String, unique=True, nullable=False),
+    Column("password", String, nullable=False)
+)
+metadata.create_all(eng)
+
+@app.route("/api/auth/signup")
+def auth_signup():
+    user = request.args.get("user", "").strip()
+    email = request.args.get("email", "").strip()
+    pswrd = request.args.get("pswrd", "").strip()
+    with eng.begin() as conn:
+        params = {
+            "user": user,
+            "email": email,
+            "pswrd": pswrd,
+        }
+        conn.execute(text("INSERT INTO users (username, email, password) VALUES (:user, :email, :pswrd)"),parameters=params)
+        return jsonify({"message": "Registered"}), 201
+@app.route("/api/auth/login")
+def auth_login():
+    user = request.args.get("user", "").strip()
+    pswrd = request.args.get("pswrd", "").strip()
+    with eng.begin() as conn:
+        params = {
+            "user": user
+        }
+        username = conn.execute(text("SELECT * FROM users WHERE username=:user"),parameters=params).fetchone()
+        if( (not username) or (not username.password == pswrd)):
+            return jsonify({"error": "Invalid credentials"}), 401
+    return jsonify({"message": "Login successful"}), 200
 app.run(debug=True, port=5000)

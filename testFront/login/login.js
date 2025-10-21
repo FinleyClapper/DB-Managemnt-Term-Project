@@ -43,19 +43,14 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             loadingDiv.style.display = 'block';
 
             try {
-                const response = await fetch(`${API_BASE}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ username, password })
-                });
+                const response = await fetch(`${API_BASE}/auth/login?user=${username}&pswrd=${password}`);
 
                 const data = await response.json();
 
                 if (response.ok) {
                     showSuccess('Login successful! Redirecting...');
                     setTimeout(() => {
-                        window.location.href = 'home.html';
+                        window.location.href = '../index/index.html';
                     }, 1000);
                 } else {
                     showError(data.error || 'Login failed');
@@ -90,12 +85,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             loadingDiv.style.display = 'block';
 
             try {
-                const response = await fetch(`${API_BASE}/auth/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ username, email, password })
-                });
+                const response = await fetch(`${API_BASE}/auth/signup?user=${username}&email=${email}&pswrd=${password}`);
 
                 const data = await response.json();
 

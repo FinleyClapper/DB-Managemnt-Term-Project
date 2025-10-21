@@ -68,3 +68,15 @@
             background-color: #331111;
             border-radius: 4px;
         }
+        .back-btn {
+            padding: 10px 20px;
+            background-color: #282828;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .back-btn:hover {
+            background-color: #3d3d3d;
+        }
