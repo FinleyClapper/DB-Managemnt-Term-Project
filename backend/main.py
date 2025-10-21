@@ -115,6 +115,27 @@ def login():
 def register():
     return render_template('register.html')
 
+@app.route('/account')
+def account():
+    # TODO: replace with real database query for the logged-in user
+    # Placeholder: empty list for now
+    playlists = []  # Later: fetch playlists from DB for current user
+
+    return render_template(
+        'account.html',
+        playlists=playlists
+    )
+@app.route('/playlist/<int:playlist_id>/edit')
+def edit_playlist(playlist_id):
+    # TODO: implement edit functionality
+    return f"Edit playlist {playlist_id} (not implemented yet)"
+
+@app.route('/playlist/<int:playlist_id>/delete')
+def delete_playlist(playlist_id):
+    # TODO: implement delete functionality
+    return f"Delete playlist {playlist_id} (not implemented yet)"
+
+
 
 #Run The App
 if __name__ == '__main__':
