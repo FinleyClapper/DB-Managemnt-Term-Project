@@ -1,22 +1,16 @@
-<<<<<<< HEAD
-=======
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
->>>>>>> a7a6ade87ae3b1f7bd530d55122f0f37b9038d0e
 import os
 import sqlite3
 import pandas as pd
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-<<<<<<< HEAD
 from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 #Load environment variables from .env file
-=======
 # Load environment variables
->>>>>>> a7a6ade87ae3b1f7bd530d55122f0f37b9038d0e
 load_dotenv()
 
 # App setup
