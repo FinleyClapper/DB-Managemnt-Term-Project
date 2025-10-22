@@ -41,7 +41,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             });
         }
 
-        function createPlaylist() {
+        async function createPlaylist() {
             const name = document.getElementById('playlistName').value.trim();
             const description = document.getElementById('playlistDescription').value.trim();
 
@@ -51,15 +51,18 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             }
 
             const newPlaylist = {
-                id: playlists.length + 1,
                 name: name,
                 description: description,
-                songCount: 0,
-                songs: []
+                songs: [],
+                songCount: 0
             };
-
+            try{
+                const response = await fetch(`${API_BASE}/playlist/create?name=${name}&description=${description}`);
+            }
+            catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
+            }
             playlists.push(newPlaylist);
-            
             document.getElementById('playlistName').value = '';
             document.getElementById('playlistDescription').value = '';
             
@@ -166,7 +169,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                 alert('Song already in playlist!');
                 return;
             }
-
+            
             currentPlaylist.songs.push(song);
             currentPlaylist.songCount = currentPlaylist.songs.length;
 
