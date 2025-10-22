@@ -39,7 +39,6 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                     card.innerHTML = `
                         <div class="playlist-name">${playlist.name}</div>
                         <div class="playlist-info">
-                            ${playlist.song_count || 0} songs<br>
                             ${playlist.description || 'No description'}
                         </div>
                         <div class="playlist-actions">
@@ -84,15 +83,9 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             loadPlaylists();
         }
 
-        function deletePlaylist(id) {
-            console.log(id);
-            playlists = playlists.filter(p => p.id !== id);
-            
-            if (currentPlaylist && currentPlaylist.id === id) {
-                document.getElementById('playlistDetails').style.display = 'none';
-                currentPlaylist = null;
-            }
-            
+        async function deletePlaylist(id) {
+
+            const response = await fetch(`${API_BASE}/playlist/remove/playlist?id=${id}`);
             loadPlaylists();
         }
 
@@ -204,29 +197,11 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             document.getElementById('songSearchInput').value = '';
         }
 
-        function removeSongFromPlaylist(songId) {
+        async function removeSongFromPlaylist(songId) {
+            console.log(songId);
+            const response = await fetch(`${API_BASE}/playlist/song/remove?id=${songId}`);
             if (!currentPlaylist) return;
-            currentPlaylist.songs = currentPlaylist.songs.filter(s => s.id !== songId);
-            currentPlaylist.songCount = currentPlaylist.songs.length;
             displayPlaylistSongs(currentPlaylist.songs);
             loadPlaylists();
         }
-        async function checkAuth() {
-            try {
-                const response = await fetch(`${API_BASE}/auth/me`, {
-                    credentials: 'include'
-                });
-                console.log(response)
-                if (response.ok) {
-                    // Already logged in, redirect to home
-                    
-                }
-                else{
-                    console.log('this one');
-                    window.location.href = '../index/index.html';}
-            } catch (error) {
-                // Not logged in, stay on login page
-                
-            }
-        }
-        checkAuth();
+        

@@ -164,7 +164,24 @@ def add_song():
     }
         conn.execute(text("INSERT INTO playlist_songs (artists, track_name,track_genre,track_id,playlist_id) VALUES (:artists, :track_name, :track_genre, :track_id,:playlist_id)"),parameters=params)
         return jsonify({"message": "Song Added"}), 201
-
+@app.route('/api/playlist/song/remove')
+def remove_song():
+    id = request.args.get('id','').strip()
+    params = {
+        "id": id
+    }
+    with eng.begin() as conn:
+        conn.execute(text("DELETE FROM playlist_songs WHERE id=:id"),parameters=params)
+    return jsonify({"message": "Song Removed"}), 201
+@app.route('/api/playlist/remove/playlist')
+def remove_playlist():
+    id = request.args.get('id','').strip()
+    params = {
+        "id": id
+    }
+    with eng.begin() as conn:
+        conn.execute(text("DELETE FROM playlists WHERE id=:id"),parameters=params)
+    return jsonify({"message": "Playlist Removed"}), 201
 @app.route("/api/auth/me", methods=["GET"])
 def get_current_user():
     """Check if user is logged in"""
