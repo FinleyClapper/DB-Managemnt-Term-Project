@@ -186,7 +186,6 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             console.log(currentPlaylist);
             console.log(song);
             const resp = await fetch(`${API_BASE}/playlist/add?track_name=${song.track_name}&track_genre=${song.track_genre}&track_id=${song.track_id}&artist=${song.artists}&playlist_id=${currentPlaylist}`)
-            alert('here');
             //if (!currentPlaylist) return;
             //if (currentPlaylist.songs.find(s => s.track_name === song.track_name && s.artists === song.artists)) {
             //    alert('Song already in playlist!');
