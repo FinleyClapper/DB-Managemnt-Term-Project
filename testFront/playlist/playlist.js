@@ -211,7 +211,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             displayPlaylistSongs(currentPlaylist.songs);
             loadPlaylists();
         }
-        async function checkAuth() {
+async function checkAuth() {
             try {
                 const response = await fetch(`${API_BASE}/auth/me`, {
                     credentials: 'include'

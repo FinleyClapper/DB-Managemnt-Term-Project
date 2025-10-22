@@ -14,11 +14,11 @@
 
     <div class="create-playlist-section">
         <h3>Create New Playlist</h3>
-        <form action="{{ url_for('playlist') }}" method="POST" class="input-group">
-            <input type="text" name="name" placeholder="Enter playlist name" required>
-            <input type="text" name="description" placeholder="Description (optional)">
-            <button type="submit">Create Playlist</button>
-        </form>
+        <div class="input-group">
+            <input type="text" id="playlistName" placeholder="Enter playlist name">
+            <input type="text" id="playlistDescription" placeholder="Description (optional)">
+            <button onclick="createPlaylist()">Create Playlist</button>
+        </div>
     </div>
     <h3>Your Playlists</h3>
     <div id="playlistsGrid" class="playlists-grid">
