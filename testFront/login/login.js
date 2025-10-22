@@ -43,7 +43,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             loadingDiv.style.display = 'block';
 
             try {
-                const response = await fetch(`${API_BASE}/auth/login?user=${username}&pswrd=${password}`);
+                const response = await fetch(`${API_BASE}/auth/login?user=${username}&pswrd=${password}`,{credentials: 'include'});
 
                 const data = await response.json();
 
@@ -110,10 +110,10 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                 const response = await fetch(`${API_BASE}/auth/me`, {
                     credentials: 'include'
                 });
-
+                console.log(response)
                 if (response.ok) {
                     // Already logged in, redirect to home
-                    window.location.href = 'home.html';
+                    window.location.href = '../index/index.html';
                 }
             } catch (error) {
                 // Not logged in, stay on login page

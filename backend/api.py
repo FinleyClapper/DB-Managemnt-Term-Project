@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request,session
 from sqlalchemy import *
 import pandas as pd
 import kagglehub
@@ -6,9 +6,14 @@ from flask_cors import CORS
 metadata = MetaData()
 path = kagglehub.dataset_download("maharshipandya/-spotify-tracks-dataset")
 app = Flask(__name__)
-CORS(app)
+app.secret_key = "a8f5f167f44f4964e6c998dee827110c9a34b1b8e5f3f4c1a2d3b4c5d6e7f890"
+app.config.update(
+    SESSION_COOKIE_SAMESITE=None,  # allows cross-origin cookies
+    SESSION_COOKIE_SECURE=False     # must be False for HTTP
+)
+CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500"])
 df = pd.read_csv(f'{path}/dataset.csv')
-needed_collumns = ['track_name','artists','track_genre']
+needed_collumns = ['track_id','track_name','artists','track_genre']
 df = df[needed_collumns]
 eng = create_engine("sqlite:///spotify.db")
 df.to_sql("tracks", con=eng, if_exists="replace", index=False)
@@ -20,10 +25,25 @@ users = Table(
     Column("email", String, unique=True, nullable=False),
     Column("password", String, nullable=False)
 )
-playlists = Table("playlists",metadata,
-                Column("id",Integer,primary_key=True,unique=True,nullable=False,autoincrement=True),
-                Column("name",String,unique=True,nullable=False),
-                Column("description",String,unique=False,nullable=True))
+playlists = Table(
+    "playlists",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True, unique=True, nullable=False),
+    Column("name", String, unique=True, nullable=False),
+    Column("description", String, nullable=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+)
+
+playlist_songs = Table(
+    "playlist_songs",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("track_id", Integer, nullable=False),
+    Column("playlist_id", Integer, ForeignKey("playlists.id", ondelete="CASCADE"), nullable=False),
+    Column("track_name", String, nullable=False),
+    Column("artists", String, nullable=False),
+    Column("track_genre", String, nullable=True),
+)
 metadata.create_all(eng)
 @app.route("/api/search/title")
 def search_title():
@@ -80,5 +100,93 @@ def auth_login():
         username = conn.execute(text("SELECT * FROM users WHERE username=:user"),parameters=params).fetchone()
         if( (not username) or (not username.password == pswrd)):
             return jsonify({"error": "Invalid credentials"}), 401
+    session["user_id"] = username.id
+    session["username"] = username.username
     return jsonify({"message": "Login successful"}), 200
+@app.route('/api/playlist/create')
+def create_playlist():
+    name = request.args.get("name", "").strip()
+    description = request.args.get("description", "").strip()
+    with eng.begin() as conn:
+        params = {
+            "name": name,
+            "description": description,
+            "user_id": session["user_id"]
+        }
+        conn.execute(text("INSERT INTO playlists (name, description,user_id) VALUES (:name, :description,:user_id)"),parameters=params)
+        return jsonify({"message": "Playlist Created"}), 201
+@app.route('/api/playlist/fetch')
+def fetch_playlists():
+    params = {
+        "id": session["user_id"]
+    }
+    playlists = pd.read_sql(text("SELECT * FROM playlists WHERE user_id=:id "), eng,params=params)
+    return jsonify(playlists.to_dict(orient="records")), 200
+@app.route('/api/playlist/fetch/id')
+def fetch_playlist():
+    id = request.args.get("id", "").strip()
+    params = {
+        "id": id
+    }
+    playlist = pd.read_sql(text("SELECT * FROM playlists WHERE id=:id"), eng,params=params)
+    return jsonify(playlist.to_dict(orient="records")), 200
+@app.route('/api/playlist/fetch/songs/id')
+def fetch_songs():
+    id = request.args.get("id","").strip()
+    params = {
+        "id": id
+    }
+    songs = pd.read_sql(text('SELECT * FROM playlist_songs WHERE playlist_id=:id'),eng,params=params)
+    print(songs.to_dict(orient="records"))
+    return jsonify(songs.to_dict(orient="records")), 200
+@app.route('/api/search/track_id')
+def search_id():
+    id = request.args.get("id","").strip()
+    params = {
+        "id": id
+    }
+    songs = pd.read_sql(text('SELECT * FROM tracks WHERE track_id=:id'),eng,params=params)
+    return jsonify(songs.to_dict(orient="records")), 200
+@app.route('/api/playlist/add')
+def add_song():
+    artists = request.args.get("artists","").strip()
+    track_name = request.args.get("track_name","").strip()
+    track_genre = request.args.get("track_genre","").strip()
+    track_id = request.args.get("track_id","").strip()
+    playlist_id = request.args.get("playlist_id","").strip()
+    with eng.begin() as conn:
+        params = {
+        "artists": artists,
+        "track_name": track_name,
+        "track_genre": track_genre,
+        "track_id": track_id,
+        "playlist_id": playlist_id
+    }
+        conn.execute(text("INSERT INTO playlist_songs (artists, track_name,track_genre,track_id,playlist_id) VALUES (:artists, :track_name, :track_genre, :track_id,:playlist_id)"),parameters=params)
+        return jsonify({"message": "Song Added"}), 201
+
+@app.route("/api/auth/me", methods=["GET"])
+def get_current_user():
+    """Check if user is logged in"""
+    print(session)
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    with eng.begin() as conn:
+        user = conn.execute(
+            text("SELECT id, username, email FROM users WHERE id = :id"),
+            {"id": session['user_id']}
+        ).fetchone()
+        
+        if not user:
+            session.clear()
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "user": {"id": user.id, "username": user.username, "email": user.email}
+        }), 200
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    session.clear()  # clears all session data
+    return jsonify({"message": "Logged out successfully"}), 200
 app.run(debug=True, port=5000)
