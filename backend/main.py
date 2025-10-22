@@ -220,7 +220,7 @@ def playlist():
         query=query
     )
 
-@app.route('/account')
+@app.route('/account', methods=['GET', 'POST'])
 def account():
     if 'user_id' not in session:
         flash("Please log in to view your account.")
