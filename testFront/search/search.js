@@ -68,8 +68,6 @@ const API_BASE = 'http://127.0.0.1:5000/api';
         function showError(message) {
             document.getElementById('results').innerHTML = `<p class="error">${message}</p>`;
         }
-
-        // Allow Enter key to search
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchByTitle();

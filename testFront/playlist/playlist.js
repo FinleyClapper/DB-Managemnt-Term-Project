@@ -1,10 +1,6 @@
 const API_BASE = 'http://127.0.0.1:5000/api';
         let currentPlaylist = null;
 
-        let playlists = [
-            
-        ];
-
 
         window.onload = function() {
             loadPlaylists();
@@ -23,7 +19,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                     throw new Error('Failed to fetch playlists');
                 }
                 
-                const playlists = await response.json();  // ← Parse JSON response
+                const playlists = await response.json();
                 
                 if (playlists.length === 0) {
                     grid.innerHTML = '<div class="empty-state">No playlists yet. Create your first playlist above!</div>';
@@ -84,7 +80,6 @@ const API_BASE = 'http://127.0.0.1:5000/api';
         }
 
         async function deletePlaylist(id) {
-
             const response = await fetch(`${API_BASE}/playlist/remove/playlist?id=${id}`);
             loadPlaylists();
         }
@@ -179,16 +174,6 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             console.log(currentPlaylist);
             console.log(song);
             const resp = await fetch(`${API_BASE}/playlist/add?track_name=${song.track_name}&track_genre=${song.track_genre}&track_id=${song.track_id}&artist=${song.artists}&playlist_id=${currentPlaylist}`)
-            alert('here');
-            //if (!currentPlaylist) return;
-            //if (currentPlaylist.songs.find(s => s.track_name === song.track_name && s.artists === song.artists)) {
-            //    alert('Song already in playlist!');
-            //    return;
-            //
-            //console.log(song);
-            //currentPlaylist.songs.push(song);
-            //currentPlaylist.songCount = currentPlaylist.songs.length;
-            
             const response = await fetch(`${API_BASE}/playlist/fetch/songs/id?id=${id}`);
             const songs = await response.json();
             loadPlaylists();

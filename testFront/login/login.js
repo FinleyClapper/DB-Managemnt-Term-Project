@@ -1,15 +1,10 @@
 const API_BASE = 'http://127.0.0.1:5000/api';
 
         function switchTab(tab) {
-            // Update tab buttons
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
-
-            // Update forms
             document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
             document.getElementById(tab + 'Form').classList.add('active');
-
-            // Clear messages
             hideMessages();
         }
 
@@ -104,7 +99,6 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             }
         }
 
-        // Check if already logged in
         async function checkAuth() {
             try {
                 const response = await fetch(`${API_BASE}/auth/me`, {
@@ -112,11 +106,9 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                 });
                 console.log(response)
                 if (response.ok) {
-                    // Already logged in, redirect to home
                     window.location.href = '../index/index.html';
                 }
             } catch (error) {
-                // Not logged in, stay on login page
             }
         }
 

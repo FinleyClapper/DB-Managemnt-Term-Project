@@ -8,8 +8,8 @@ path = kagglehub.dataset_download("maharshipandya/-spotify-tracks-dataset")
 app = Flask(__name__)
 app.secret_key = "a8f5f167f44f4964e6c998dee827110c9a34b1b8e5f3f4c1a2d3b4c5d6e7f890"
 app.config.update(
-    SESSION_COOKIE_SAMESITE=None,  # allows cross-origin cookies
-    SESSION_COOKIE_SECURE=False     # must be False for HTTP
+    SESSION_COOKIE_SAMESITE=None,
+    SESSION_COOKIE_SECURE=False
 )
 CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500"])
 df = pd.read_csv(f'{path}/dataset.csv')
@@ -137,7 +137,6 @@ def fetch_songs():
         "id": id
     }
     songs = pd.read_sql(text('SELECT * FROM playlist_songs WHERE playlist_id=:id'),eng,params=params)
-    print(songs.to_dict(orient="records"))
     return jsonify(songs.to_dict(orient="records")), 200
 @app.route('/api/search/track_id')
 def search_id():
@@ -184,8 +183,6 @@ def remove_playlist():
     return jsonify({"message": "Playlist Removed"}), 201
 @app.route("/api/auth/me", methods=["GET"])
 def get_current_user():
-    """Check if user is logged in"""
-    print(session)
     if 'user_id' not in session:
         return jsonify({"error": "Not authenticated"}), 401
     
@@ -204,6 +201,6 @@ def get_current_user():
         }), 200
 @app.route("/api/auth/logout", methods=["POST"])
 def auth_logout():
-    session.clear()  # clears all session data
+    session.clear()
     return jsonify({"message": "Logged out successfully"}), 200
 app.run(debug=True, port=5000)
