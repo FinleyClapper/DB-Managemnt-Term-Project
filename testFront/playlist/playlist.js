@@ -10,38 +10,51 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             loadPlaylists();
         };
 
-        function loadPlaylists() {
-
+        async function loadPlaylists() {
             const grid = document.getElementById('playlistsGrid');
+            grid.innerHTML = '<div class="loading">Loading playlists...</div>';
             
-            if (playlists.length === 0) {
-                grid.innerHTML = '<div class="empty-state">No playlists yet. Create your first playlist above!</div>';
-                return;
+            try {
+                const response = await fetch(`${API_BASE}/playlist/fetch`,{
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch playlists');
+                }
+                
+                const playlists = await response.json();  // ← Parse JSON response
+                
+                if (playlists.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">No playlists yet. Create your first playlist above!</div>';
+                    return;
+                }
+                
+                grid.innerHTML = '';
+                playlists.forEach(playlist => {
+                    const card = document.createElement('div');
+                    card.className = 'playlist-card';
+                    card.onclick = () => viewPlaylist(playlist.id);
+                    
+                    card.innerHTML = `
+                        <div class="playlist-name">${playlist.name}</div>
+                        <div class="playlist-info">
+                            ${playlist.song_count || 0} songs<br>
+                            ${playlist.description || 'No description'}
+                        </div>
+                        <div class="playlist-actions">
+                            <button class="view-btn" onclick="event.stopPropagation(); viewPlaylist(${playlist.id})">View</button>
+                            <button class="delete-btn" onclick="event.stopPropagation(); deletePlaylist(${playlist.id})">Delete</button>
+                        </div>
+                    `;
+                    
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                grid.innerHTML = `<div class="error">Error loading playlists: ${error.message}</div>`;
             }
-
-            grid.innerHTML = '';
-            playlists.forEach(playlist => {
-                const card = document.createElement('div');
-                card.className = 'playlist-card';
-                card.onclick = () => viewPlaylist(playlist.id);
-                
-                card.innerHTML = `
-                    <div class="playlist-name">${playlist.name}</div>
-                    <div class="playlist-info">
-                        ${playlist.songCount} songs<br>
-                        ${playlist.description || 'No description'}
-                    </div>
-                    <div class="playlist-actions">
-                        <button class="view-btn" onclick="event.stopPropagation(); viewPlaylist(${playlist.id})">View</button>
-                        <button class="delete-btn" onclick="event.stopPropagation(); deletePlaylist(${playlist.id})">Delete</button>
-                    </div>
-                `;
-                
-                grid.appendChild(card);
-            });
         }
-
-        function createPlaylist() {
+        async function createPlaylist() {
             const name = document.getElementById('playlistName').value.trim();
             const description = document.getElementById('playlistDescription').value.trim();
 
@@ -51,15 +64,20 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             }
 
             const newPlaylist = {
-                id: playlists.length + 1,
                 name: name,
                 description: description,
-                songCount: 0,
-                songs: []
+                songs: [],
+                songCount: 0
             };
-
+            try{
+                const response = await fetch(`${API_BASE}/playlist/create?name=${name}&description=${description}`,{
+                    credentials: 'include'
+                });
+            }
+            catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
+            }
             playlists.push(newPlaylist);
-            
             document.getElementById('playlistName').value = '';
             document.getElementById('playlistDescription').value = '';
             
@@ -67,6 +85,7 @@ const API_BASE = 'http://127.0.0.1:5000/api';
         }
 
         function deletePlaylist(id) {
+            console.log(id);
             playlists = playlists.filter(p => p.id !== id);
             
             if (currentPlaylist && currentPlaylist.id === id) {
@@ -77,12 +96,12 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             loadPlaylists();
         }
 
-        function viewPlaylist(id) {
-            const playlist = playlists.find(p => p.id === id);
+        async function viewPlaylist(id) {
+            
+            const playlist = await fetch(`${API_BASE}/playlist/fetch/id?id=${id}`);
             if (!playlist) return;
-
-            currentPlaylist = playlist;
-
+            currentPlaylist = id;
+            
             document.getElementById('selectedPlaylistName').textContent = playlist.name;
             document.getElementById('selectedPlaylistDesc').textContent = playlist.description || 'No description';
             document.getElementById('playlistDetails').style.display = 'block';
@@ -90,8 +109,9 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             document.querySelectorAll('.playlist-card').forEach(card => {
                 card.classList.remove('selected');
             });
-
-            displayPlaylistSongs(playlist.songs);
+            const response = await fetch(`${API_BASE}/playlist/fetch/songs/id?id=${id}`);
+            const songs = await response.json();
+            displayPlaylistSongs(songs);
 
             document.getElementById('playlistDetails').scrollIntoView({ behavior: 'smooth' });
         }
@@ -103,12 +123,10 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                 songsDiv.innerHTML = '<div class="empty-state">No songs in this playlist yet. Search and add songs above!</div>';
                 return;
             }
-
             songsDiv.innerHTML = '';
             songs.forEach(song => {
                 const songItem = document.createElement('div');
                 songItem.className = 'song-item';
-                
                 songItem.innerHTML = `
                     <div class="song-info">
                         <div class="song-title">${song.track_name}</div>
@@ -144,14 +162,17 @@ const API_BASE = 'http://127.0.0.1:5000/api';
                 songs.forEach(song => {
                     const resultItem = document.createElement('div');
                     resultItem.className = 'search-result-item';
-                    
                     resultItem.innerHTML = `
-                        <div class="song-info">
-                            <div class="song-title">${song.track_name}</div>
-                            <div class="song-artist">${song.artists}</div>
-                        </div>
-                        <button class="add-btn" onclick='addSongToPlaylist(${JSON.stringify(song)})'>Add</button>
-                    `;
+  <div class="song-info">
+    <div class="song-title">${song.track_name}</div>
+    <div class="song-artist">${song.artists}</div>
+  </div>
+  <button
+    type="button"
+    class="add-btn"
+    onclick="event.stopPropagation(); addSongToPlaylist(JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(song))}')))"
+  >Add</button>
+`;
                     
                     resultsDiv.appendChild(resultItem);
                 });
@@ -160,17 +181,23 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             }
         }
 
-        function addSongToPlaylist(song) {
-            if (!currentPlaylist) return;
-            if (currentPlaylist.songs.find(s => s.track_name === song.track_name && s.artists === song.artists)) {
-                alert('Song already in playlist!');
-                return;
-            }
-
-            currentPlaylist.songs.push(song);
-            currentPlaylist.songCount = currentPlaylist.songs.length;
-
-            displayPlaylistSongs(currentPlaylist.songs);
+        async function addSongToPlaylist(song) {
+            
+            console.log(currentPlaylist);
+            console.log(song);
+            const resp = await fetch(`${API_BASE}/playlist/add?track_name=${song.track_name}&track_genre=${song.track_genre}&track_id=${song.track_id}&artist=${song.artists}&playlist_id=${currentPlaylist}`)
+            alert('here');
+            //if (!currentPlaylist) return;
+            //if (currentPlaylist.songs.find(s => s.track_name === song.track_name && s.artists === song.artists)) {
+            //    alert('Song already in playlist!');
+            //    return;
+            //
+            //console.log(song);
+            //currentPlaylist.songs.push(song);
+            //currentPlaylist.songCount = currentPlaylist.songs.length;
+            
+            const response = await fetch(`${API_BASE}/playlist/fetch/songs/id?id=${id}`);
+            const songs = await response.json();
             loadPlaylists();
             
             document.getElementById('searchResults').innerHTML = '';
@@ -184,3 +211,22 @@ const API_BASE = 'http://127.0.0.1:5000/api';
             displayPlaylistSongs(currentPlaylist.songs);
             loadPlaylists();
         }
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    credentials: 'include'
+                });
+                console.log(response)
+                if (response.ok) {
+                    // Already logged in, redirect to home
+                    
+                }
+                else{
+                    console.log('this one');
+                    window.location.href = '../index/index.html';}
+            } catch (error) {
+                // Not logged in, stay on login page
+                
+            }
+        }
+        checkAuth();
