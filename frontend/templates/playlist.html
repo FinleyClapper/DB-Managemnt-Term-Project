@@ -32,8 +32,12 @@
 
 <hr>
 
-<!-- Songs list -->
-<h3>Available Songs{% if selected_genre %} ({{ selected_genre }}){% endif %}</h3>
+<!-- Songs list grouped by genre -->
+{% if selected_genre %}
+<h3>Available Songs in {{ selected_genre }}</h3>
+{% else %}
+<h3>All Available Songs</h3>
+{% endif %}
 <table>
     <tr>
         <th>Select</th>
@@ -48,17 +52,24 @@
         <td>{{ song.artists }}</td>
         <td>{{ song.track_genre }}</td>
     </tr>
+    {% else %}
+    <tr>
+        <td colspan="4">No songs found for this genre or search query.</td>
+    </tr>
     {% endfor %}
 </table>
 
 <hr>
 
-<!-- Saved playlists -->
+<!-- User saved playlists -->
 <h3>Your Playlists</h3>
 <ul>
     {% for pl in playlists %}
     <li>
         <strong>{{ pl.name }}</strong> — {{ pl.songs|length }} songs
+        <!-- Placeholder buttons for future edit/delete -->
+        <button class="btn small-btn">Edit</button>
+        <button class="btn small-btn danger-btn">Delete</button>
     </li>
     {% else %}
     <li>No playlists yet. Create one above!</li>
