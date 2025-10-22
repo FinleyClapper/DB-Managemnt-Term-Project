@@ -4,9 +4,40 @@
 <h2>Create a Playlist</h2>
 
 <!-- Playlist creation form -->
-<form method="POST" class="form-container">
+<form method="POST" action="{{ url_for('playlist') }}" class="form-container">
     <label for="name">Playlist Name:</label>
     <input type="text" id="name" name="name" placeholder="Enter playlist name" required>
+
+    <hr>
+
+    <!-- Songs list grouped by genre -->
+    {% if selected_genre %}
+    <h3>Available Songs in {{ selected_genre }}</h3>
+    {% else %}
+    <h3>All Available Songs</h3>
+    {% endif %}
+
+    <table>
+        <tr>
+            <th>Select</th>
+            <th>Track Name</th>
+            <th>Artist</th>
+            <th>Genre</th>
+        </tr>
+        {% for song in songs %}
+        <tr>
+            <td><input type="checkbox" name="songs" value="{{ song.track_name }}"></td>
+            <td>{{ song.track_name }}</td>
+            <td>{{ song.artists }}</td>
+            <td>{{ song.track_genre }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">No songs found for this genre or search query.</td>
+        </tr>
+        {% endfor %}
+    </table>
+
     <button type="submit" class="btn">Create Playlist</button>
 </form>
 
@@ -32,42 +63,12 @@
 
 <hr>
 
-<!-- Songs list grouped by genre -->
-{% if selected_genre %}
-<h3>Available Songs in {{ selected_genre }}</h3>
-{% else %}
-<h3>All Available Songs</h3>
-{% endif %}
-<table>
-    <tr>
-        <th>Select</th>
-        <th>Track Name</th>
-        <th>Artist</th>
-        <th>Genre</th>
-    </tr>
-    {% for song in songs %}
-    <tr>
-        <td><input type="checkbox" name="songs" value="{{ song.track_name }}"></td>
-        <td>{{ song.track_name }}</td>
-        <td>{{ song.artists }}</td>
-        <td>{{ song.track_genre }}</td>
-    </tr>
-    {% else %}
-    <tr>
-        <td colspan="4">No songs found for this genre or search query.</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<hr>
-
 <!-- User saved playlists -->
 <h3>Your Playlists</h3>
 <ul>
     {% for pl in playlists %}
     <li>
         <strong>{{ pl.name }}</strong> — {{ pl.songs|length }} songs
-        <!-- Placeholder buttons for future edit/delete -->
         <button class="btn small-btn">Edit</button>
         <button class="btn small-btn danger-btn">Delete</button>
     </li>
