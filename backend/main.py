@@ -229,6 +229,25 @@ def account():
     db_conn = get_db()
     cursor = db_conn.cursor()
     user_id = session['user_id']
+    
+    if request.method == 'POST':
+        playlist_name = request.form.get('name')
+        playlist_description = request.form.get('description', '')
+        
+        print("DEBUG - Creating Playlist:")
+        print(f"Name: {playlist_name}, Desc: {playlist_description}, User ID: {user_id}")
+        
+        if not playlist_name:
+            flash("Playlist name required")
+        else:
+            cursor.execute(
+                "INSERT INTO playlists (name, description, user_id) VALUES (?, ?, ?)",
+                (playlist_name, playlist_description, user_id)
+            )
+            db_conn.commit()
+            flash("playlist created successfully!")
+            print("DEBUG - Insert committed successfully.")
+            return redirect(url_for('account'))
 
     cursor.execute("SELECT * FROM playlists WHERE user_id = ?", (user_id,))
     playlists_rows = cursor.fetchall()
