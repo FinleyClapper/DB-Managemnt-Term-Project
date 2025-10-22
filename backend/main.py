@@ -259,13 +259,16 @@ def playlist():
 @app.route('/account')
 def account():
     if 'user_id' not in session:
+        flash("Please log in to view your account.")
         return redirect(url_for('login'))
 
     db_conn = get_db()
     cursor = db_conn.cursor()
+    user_id = session['user_id']
 
-    cursor.execute("SELECT * FROM playlists WHERE user_id = ?", (session['user_id'],))
+    cursor.execute("SELECT * FROM playlists WHERE user_id = ?", (user_id,))
     playlists_rows = cursor.fetchall()
+
     playlists = []
     for row in playlists_rows:
         cursor.execute(
