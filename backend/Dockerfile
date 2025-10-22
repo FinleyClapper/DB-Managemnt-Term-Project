@@ -11,4 +11,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 #Copy project files
 
 COPY . .
+ENV KAGGLE_CONFIG_DIR=/app/kaggle
 CMD ["python", "main.py"]

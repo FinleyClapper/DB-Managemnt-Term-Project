@@ -4,8 +4,16 @@ from dotenv import load_dotenv
 import pandas as pd
 from kaggle.api.kaggle_api_extended import KaggleApi
 
+from flask import Flask, render_template, request, redirect, url_for
+from dotenv import load_dotenv
 #Load environment variables from .env file
 load_dotenv()
+import pandas as pd
+import os
+#CHECK KAGGLE CONFIG
+if not os.getenv("KAGGLE_CONFIG_DIR"):
+    print("⚠️ Warning: KAGGLE_CONFIG_DIR is not set. Please configure it before running.")
+from kaggle.api.kaggle_api_extended import KaggleApi
 
 #Tell flash where to find templates and static files.
 app = Flask(
@@ -60,48 +68,10 @@ def search():
 
 @app.route('/playlist', methods=['GET', 'POST'])
 def playlist():
-    # Playlist creation (basic placeholder for now)
-    if request.method == 'POST':
-        name = request.form.get('name')
-        # Save to DB or mock list later
-        print(f"Created playlist: {name}")
-        # You could store playlists in a global or session for now
-        return redirect(url_for('playlist'))
+    return render_template('playlist.html')  # Create this file too
 
-    # Filters
-    selected_genre = request.args.get('genre')
-    query = request.args.get('query')
-
-    # Get genres
-    genres = sorted(df['track_genre'].dropna().unique())
-
-    # Filter dataset
-    filtered = df.copy()
-    if selected_genre:
-        filtered = filtered[filtered['track_genre'] == selected_genre]
-    if query:
-        filtered = filtered[
-            filtered['track_name'].str.contains(query, case=False, na=False)
-            | filtered['artists'].str.contains(query, case=False, na=False)
-            ]
-
-    # Dummy playlists for now
-    playlists = [
-        {'name': 'My Chill Mix', 'songs': ['Song A', 'Song B']},
-        {'name': 'Workout Vibes', 'songs': ['Track X', 'Track Y', 'Track Z']},
-    ]
-
-    return render_template(
-        'playlist.html',
-        genres=genres,
-        selected_genre=selected_genre,
-        query=query,
-        songs=filtered[['track_name', 'artists', 'track_genre']].dropna().to_dict(orient='records'),
-        playlists=playlists
-    )
-
-@app.route('/add_song', methods=['GET', 'POST'])
-def add_song():
+#@app.route('/add_song', methods=['GET', 'POST'])
+#def add_song():
     if request.method == 'POST':
         # Call logic teammate’s function here
         return redirect(url_for('index'))
