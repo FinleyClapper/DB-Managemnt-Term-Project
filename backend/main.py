@@ -7,6 +7,9 @@ import sqlite3
 import pandas as pd
 from kaggle.api.kaggle_api_extended import KaggleApi
 
+from flask import Flask, render_template, request, redirect, url_for
+from dotenv import load_dotenv
+#Load environment variables from .env file
 # Load environment variables
 load_dotenv()
 
