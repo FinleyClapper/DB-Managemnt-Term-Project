@@ -81,16 +81,4 @@ def auth_login():
         if( (not username) or (not username.password == pswrd)):
             return jsonify({"error": "Invalid credentials"}), 401
     return jsonify({"message": "Login successful"}), 200
-@app.route('/api/playlist/create')
-def create_playlist():
-    print(request.view_args)
-    name = request.args.get("name", "").strip()
-    description = request.args.get("description", "").strip()
-    with eng.begin() as conn:
-        params = {
-            "name": name,
-            "description": description
-        }
-        conn.execute(text("INSERT INTO playlists (name, description) VALUES (:name, :description)"),parameters=params)
-        return jsonify({"message": "Playlist Created"}), 201
 app.run(debug=True, port=5000)
