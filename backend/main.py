@@ -152,16 +152,18 @@ def logout():
 @app.route('/playlist', methods=['GET', 'POST'])
 def playlist():
     if 'user_id' not in session:
+        flash("You must be logged in to create a playlist.")
         return redirect(url_for('login'))
 
     db_conn = get_db()
     cursor = db_conn.cursor()
 
+    user_id = session['user_id']
+
     # Handle playlist creation
     if request.method == 'POST':
         playlist_name = request.form.get('name')
         selected_songs = request.form.getlist('songs')
-        user_id = session['user_id']
 
         if playlist_name:
             cursor.execute(
@@ -169,13 +171,55 @@ def playlist():
                 (playlist_name, user_id)
             )
             playlist_id = cursor.lastrowid
+
             for song_title in selected_songs:
                 cursor.execute(
                     "INSERT INTO playlist_songs (playlist_id, song_title) VALUES (?, ?)",
                     (playlist_id, song_title)
                 )
+
             db_conn.commit()
+            flash("Playlist created successfully!")
             return redirect(url_for('playlist'))
+
+    # Genre filtering and search
+    selected_genre = request.args.get('genre')
+    query = request.args.get('query', '').lower()
+    songs_df = df.copy()
+
+    if selected_genre:
+        songs_df = songs_df[songs_df['track_genre'] == selected_genre]
+    if query:
+        songs_df = songs_df[
+            songs_df['track_name'].str.lower().str.contains(query) |
+            songs_df['artists'].str.lower().str.contains(query)
+            ]
+
+    songs = songs_df[['track_name', 'artists', 'track_genre']].to_dict(orient='records')
+
+    # Fetch this user's playlists only
+    cursor.execute("SELECT * FROM playlists WHERE user_id = ?", (user_id,))
+    playlists_rows = cursor.fetchall()
+
+    playlists = []
+    for row in playlists_rows:
+        cursor.execute(
+            "SELECT song_title FROM playlist_songs WHERE playlist_id = ?",
+            (row['id'],)
+        )
+        songs_list = [r['song_title'] for r in cursor.fetchall()]
+        playlists.append({'id': row['id'], 'name': row['name'], 'songs': songs_list})
+
+    genres = sorted(df['track_genre'].dropna().unique())
+
+    return render_template(
+        'playlist.html',
+        songs=songs,
+        playlists=playlists,
+        genres=genres,
+        selected_genre=selected_genre,
+        query=query
+    )
 
     # Genre filtering & search
     selected_genre = request.args.get('genre')
