@@ -12,7 +12,7 @@
 
 <hr>
 
-<!-- Genre filter -->
+<!-- Genre filter 
 <h3>Browse Songs by Genre</h3>
 <form method="GET" action="{{ url_for('playlist') }}">
     <label for="genre">Select Genre:</label>
@@ -23,16 +23,16 @@
         {% endfor %}
     </select>
 </form>
-
-<!-- Song search -->
+-->
+<!-- Song search 
 <form method="GET" action="{{ url_for('playlist') }}" class="search-form">
     <input type="text" name="query" placeholder="Search by song title or artist" value="{{ query or '' }}">
     <button type="submit" class="btn">Search</button>
 </form>
 
 <hr>
-
-<!-- Songs list -->
+-->
+<!-- Songs list --
 <h3>Available Songs{% if selected_genre %} ({{ selected_genre }}){% endif %}</h3>
 <table>
     <tr>
@@ -52,7 +52,7 @@
 </table>
 
 <hr>
-
+-->
 <!-- Saved playlists -->
 <h3>Your Playlists</h3>
 <ul>

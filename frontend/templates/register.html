@@ -3,6 +3,11 @@
 {% block content %}
 <div class="auth-container">
     <h2>Create an account</h2>
+    {% if error %}
+        <div style="background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
+            {{ error }}
+        </div>
+    {% endif %}
     <form method="POST">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" placeholder="Choose a username" required>
