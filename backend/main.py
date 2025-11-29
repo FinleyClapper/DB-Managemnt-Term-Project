@@ -5,14 +5,11 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from sqlalchemy.orm import sessionmaker, scoped_session
 from werkzeug.security import check_password_hash, generate_password_hash
 import os
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text, inspect
 
 #Load environment variables from .env file
 load_dotenv()
-#CHECK KAGGLE CONFIG
-#if not os.getenv("KAGGLE_CONFIG_DIR"):
- #   print("⚠️ Warning: KAGGLE_CONFIG_DIR is not set. Please configure it before running.")
-#rom kaggle.api.kaggle_api_extended import KaggleApi
+
 # === SAFE KAGGLE DOWNLOAD (only runs when needed) ===
 dataset_path = os.path.join(os.path.dirname(__file__), 'data/dataset.csv')
 
@@ -81,7 +78,8 @@ playlists = Table(
     "playlists",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("name", String, nullable=False)
+    Column("name", String, nullable=False),
+    Column("user_id", Integer, nullable=False)  # ← NEW: who owns this playlist
 )
 users = Table(
     "users",
@@ -93,7 +91,16 @@ users = Table(
 )
 
 metadata.create_all(eng)
-
+# === MIGRATION: Add user_id column if it doesn't exist yet ===
+with eng.connect() as conn:
+    inspector = inspect(eng)
+    if "playlists" in inspector.get_table_names():
+        columns = [col["name"] for col in inspector.get_columns("playlists")]
+        if "user_id" not in columns:
+            print("Adding user_id column to playlists table...")
+            conn.execute(text("ALTER TABLE playlists ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1"))
+            conn.commit()
+            print("Migration complete!")
 playlists = []
 
 #define routes
@@ -124,17 +131,17 @@ def search():
     return render_template('search.html', results=results)
 
 @app.route('/playlist', methods=['GET', 'POST'])
+@login_required  # ← Important! Only logged-in users can create playlists
 def playlist():
     if request.method == 'POST':
         name = request.form.get('name')
         if name:
             with eng.begin() as conn:
                 conn.execute(
-                    text("INSERT INTO playlists (name) VALUES (:name)"),
-                    {"name": name}
+                    text("INSERT INTO playlists (name, user_id) VALUES (:name, :user_id)"),
+                    {"name": name, "user_id": current_user.id}
                 )
-                print(pd.read_sql("SELECT * FROM users", eng))
-        return redirect(url_for('account'))  # after creating, go to account page
+            return redirect(url_for('account'))
 
         # --- GET request: build context ---
     selected_genre = request.args.get('genre')
@@ -258,9 +265,13 @@ def register():
     return render_template('register.html')
 
 @app.route('/account')
+@login_required
 def account():
     with eng.begin() as conn:
-        rows = conn.execute(text("SELECT * FROM playlists")).fetchall()
+        rows = conn.execute(
+            text("SELECT id, name FROM playlists WHERE user_id = :user_id"),
+            {"user_id": current_user.id}
+        ).fetchall()
     return render_template('account.html', playlists=rows)
 
 @app.route('/playlist/<int:playlist_id>/edit')
