@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Edit Playlist: {{ playlist.name }}</h2>
+
+<!-- Rename form -->
+<form method="POST" class="form-inline">
+    <input type="hidden" name="action" value="rename">
+    <label for="playlist_name">Rename:</label>
+    <input type="text" id="playlist_name" name="playlist_name" value="{{ playlist.name }}">
+    <button type="submit" class="btn">Rename</button>
+</form>
+
+<hr>
+
+<!-- Add song via search results -->
+<h3>Search & Add Songs</h3>
+<form method="GET" action="" class="search-form">
+    <input type="text" name="q" placeholder="search by title or artist" value="{{ query or '' }}">
+    <button type="submit" class="btn">Search</button>
+</form>
+
+    {% if search_results %}
+<table>
+    <thead>
+        <tr><th>Title</th><th>Artist</th><th>Genre</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for s in search_results %}
+        <tr>
+            <td>{{ s.title }}</td>
+            <td>{{ s.artist }}</td>
+            <td>{% if s.genre %}{{ s.genre|title }}{% else %}N/A{% endif %}</td>
+            <td>
+                <form method="POST" style="display:inline">
+                    <input type="hidden" name="action" value="add_song">
+                    <input type="hidden" name="song_row_id" value="{{ s.row_id }}">
+                    <button type="submit" class="btn">Add</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% elif query %}
+    <p>No results for "{{ query }}".</p>
+{% endif %}
+
+<hr>
+
+<!-- Current songs in playlist -->
+<h3>Songs in this Playlist ({{ songs|length }})</h3>
+<table>
+    <thead>
+        <tr><th>Title</th><th>Artist</th><th>Genre</th><th>Duration</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for s in songs %}
+        <tr>
+            <td>{{ s.title }}</td>
+            <td>{{ s.artist }}</td>
+            <td>{% if s.genre %}{{ s.genre|title }}{% else %}N/A{% endif %}</td>
+            <td>{{ s.duration }}s</td>
+            <td>
+                <form method="POST" style="display:inline">
+                    <input type="hidden" name="action" value="remove_song">
+                    <input type="hidden" name="song_row_id" value="{{ s.row_id }}">
+                    <button type="submit" class="btn">Remove</button>
+                </form>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="5">No songs yet.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<p><a href="{{ url_for('account') }}">Back to account</a></p>
+
+{% endblock %}

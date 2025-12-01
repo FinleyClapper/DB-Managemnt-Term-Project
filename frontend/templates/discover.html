@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Discover</h2>
+
+<div class="glass-card">
+    <h3>Most Popular Right Now</h3>
+    {% if popular %}
+        <ul>
+        {% for s in popular %}
+            <li>
+                <strong>{{ s.title }}</strong> — {{ s.artist }}
+                <span class="muted">(&nbsp;{{ s.count }} adds&nbsp;)</span>
+                {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('add_song_to_playlist') }}" class="add-to-playlist-form" style="display:inline;margin-left:8px">
+                        <input type="hidden" name="song_row_id" value="{{ s.row_id }}">
+                        <select name="playlist_id" style="vertical-align:middle;">
+                            {% for p in current_user_playlists %}
+                                <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn">Add</button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="muted" style="margin-left:8px">Log in to add</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted">No popularity data yet — add songs to playlists to surface popular tracks.</p>
+    {% endif %}
+</div>
+
+<div style="height:18px"></div>
+
+<div class="glass-card">
+    {% if selected_genre %}
+        <h3>Genre: {{ selected_genre|title }}</h3>
+        <p class="muted">Browsing tracks for <strong>{{ selected_genre|title }}</strong>. <a href="{{ url_for('discover') }}">Back to genres</a></p>
+        {% if songs %}
+            <ul>
+            {% for s in songs %}
+                <li style="margin-bottom:8px">
+                    <strong>{{ s.title }}</strong> — <span class="muted">{{ s.artist }}</span>
+                    {% if s['pop'] %}
+                        <small class="muted">({{ s['pop'] }} adds)</small>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                        <form method="POST" action="{{ url_for('add_song_to_playlist') }}" class="add-to-playlist-form" style="display:inline;margin-left:10px">
+                            <input type="hidden" name="song_row_id" value="{{ s.row_id }}">
+                            <select name="playlist_id" style="vertical-align:middle;">
+                                {% for p in current_user_playlists %}
+                                    <option value="{{ p.id }}">{{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn">Add</button>
+                        </form>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="muted" style="margin-left:10px">Log in to add</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">No tracks found in this genre.</p>
+        {% endif %}
+    {% else %}
+        <h3>Browse by Genre</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            {% for g in genres %}
+                <a href="{{ url_for('discover') }}?genre={{ g }}" class="btn secondary">{{ g|title }}</a>
+            {% endfor %}
+        </div>
+        <p class="muted" style="margin-top:10px">Click a genre to browse its popular tracks.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
