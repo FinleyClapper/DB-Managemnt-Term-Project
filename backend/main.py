@@ -99,6 +99,14 @@ playlist_songs = Table(
 )
 
 metadata.create_all(eng)
+with eng.begin() as conn:
+    try:
+        conn.execute(text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_song_per_playlist 
+            ON playlist_songs (playlist_id, song_row_id)
+        """))
+    except:
+        pass  # already exists
 # === MIGRATION: Add user_id column if it doesn't exist yet ===
 with eng.connect() as conn:
     inspector = inspect(eng)
@@ -430,6 +438,65 @@ def account():
 
     return render_template('account.html', playlists=playlists)
 
+@app.route('/playlist/merge', methods=['POST'])
+@login_required
+def merge_playlists():
+    target_id = request.form.get('target_id', type=int)
+    source_id = request.form.get('source_id', type=int)
+
+    if not target_id or not source_id or target_id == source_id:
+        flash("Invalid selection", "danger")
+        return redirect(url_for('account'))
+
+    with eng.begin() as conn:
+        # FIXED: no space after colon
+        target = conn.execute(
+            text("SELECT id, name FROM playlists WHERE id = :id AND user_id = :uid"),
+            {"id": target_id, "uid": current_user.id}
+        ).fetchone()
+
+        source = conn.execute(
+            text("SELECT id, name FROM playlists WHERE id = :id AND user_id = :uid"),
+            {"id": source_id, "uid": current_user.id}
+        ).fetchone()
+
+        if not target or not source:
+            flash("Playlist not found or not yours", "danger")
+            return redirect(url_for('account'))
+
+        # Get highest position in target
+        max_pos = conn.execute(
+            text("SELECT COALESCE(MAX(position), -1) FROM playlist_songs WHERE playlist_id = :pid"),
+            {"pid": target_id}
+        ).scalar()
+
+        # Copy songs (skip duplicates)
+        songs_to_copy = conn.execute(
+            text("SELECT song_row_id FROM playlist_songs WHERE playlist_id = :pid ORDER BY position"),
+            {"pid": source_id}
+        ).fetchall()
+
+        added_count = 0
+        for (song_row_id,) in songs_to_copy:
+            exists = conn.execute(
+                text("SELECT 1 FROM playlist_songs WHERE playlist_id = :pid AND song_row_id = :sid"),
+                {"pid": target_id, "sid": song_row_id}
+            ).fetchone()
+
+            if not exists:
+                max_pos += 1
+                conn.execute(
+                    text("INSERT INTO playlist_songs (playlist_id, song_row_id, position) VALUES (:pid, :sid, :pos)"),
+                    {"pid": target_id, "sid": song_row_id, "pos": max_pos}
+                )
+                added_count += 1
+
+        # Delete source
+        conn.execute(text("DELETE FROM playlist_songs WHERE playlist_id = :pid"), {"pid": source_id})
+        conn.execute(text("DELETE FROM playlists WHERE id = :pid"), {"pid": source_id})
+
+    flash(f'"{source.name}" merged into "{target.name}" — {added_count} new songs added!', "success")
+    return redirect(url_for('account'))
 
 @app.route('/debug-users')
 def debug_users():

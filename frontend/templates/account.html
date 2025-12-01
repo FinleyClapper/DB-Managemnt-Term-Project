@@ -15,7 +15,7 @@
     <h3>My Playlists</h3>
 
     {% if playlists %}
-        <table>
+        <table class="table table-hover">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -26,18 +26,74 @@
             <tbody>
                 {% for pl in playlists %}
                     <tr>
-                        <td>{{ pl.name }}</td>
-                        <td>{{ pl.song_count|default(0) }}</td>
+                        <td><strong>{{ pl.name }}</strong></td>
+                        <td>{{ pl.song_count|default(0) }} song{{ 's' if (pl.song_count|default(0)) != 1 else '' }}</td>
                         <td>
-                            <a href="{{ url_for('edit_playlist', playlist_id=pl.id) }}" class="btn btn-small">Edit</a>
-                            <a href="{{ url_for('delete_playlist', playlist_id=pl.id) }}" class="btn btn-small btn-danger">Delete</a>
+                            <!-- Edit Button -->
+                            <a href="{{ url_for('edit_playlist', playlist_id=pl.id) }}" 
+                               class="btn btn-sm btn-primary">Edit</a>
+
+                            <!-- Merge Button → opens modal -->
+                            <button type="button" class="btn btn-sm btn-info" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#mergeModal{{ pl.id }}">
+                                Merge
+                            </button>
+
+                            <!-- Delete Button (now POST for safety) -->
+                            <form method="POST" 
+                                  action="{{ url_for('delete_playlist', playlist_id=pl.id) }}" 
+                                  class="d-inline"
+                                  onsubmit="return confirm('Permanently delete {{ pl.name }}?')">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
                         </td>
                     </tr>
+
+                    <!-- Merge Modal for this playlist -->
+                    <div class="modal fade" id="mergeModal{{ pl.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Merge into "{{ pl.name }}"</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Select a playlist to <strong>merge into</strong> this one:</p>
+                                    <form method="POST" action="{{ url_for('merge_playlists') }}">
+                                        <input type="hidden" name="target_id" value="{{ pl.id }}">
+                                        <select name="source_id" class="form-select mb-3" required>
+                                            <option value="">— Choose playlist —</option>
+                                            {% for other in playlists %}
+                                                {% if other.id != pl.id %}
+                                                    <option value="{{ other.id }}">
+                                                        {{ other.name }} ({{ other.song_count|default(0) }} songs)
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <div class="text-end">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-success">Merge & Delete Source</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 {% endfor %}
             </tbody>
         </table>
+
+        <p>
+            <a href="{{ url_for('playlist') }}" class="btn btn-success">
+                Create New Playlist
+            </a>
+        </p>
+
     {% else %}
         <p>You haven't created any playlists yet.</p>
+        <a href="{{ url_for('playlist') }}" class="btn btn-success">Create Your First Playlist</a>
     {% endif %}
 
 {% endblock %}
