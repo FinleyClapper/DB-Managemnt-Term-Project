@@ -1,12 +1,129 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Welcome to Rhythmix!</h2>
-<p>Explore your music collection, create playlists, and discover songs!</p>
+<section class="glass-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px">
+            <h1 style="margin:0;font-size:28px">Welcome to <span style="color:var(--accent)">Rhythmix</span></h1>
+            <p class="muted">Explore your music collection, create playlists, and discover songs tailored to you.</p>
 
-<div class="links">
-    <a href="/add_song" class="btn">Add a New Song</a>
-    <a href="/search" class="btn">Search Music</a>
-    <a href="/playlist" class="btn">Manage Playlists</a>
+            <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+                <a href="/search" class="btn">Search Music</a>
+                <a href="/playlist" class="btn secondary">Manage Playlists</a>
+                <a href="/discover" class="btn">Discover</a>
+            </div>
+        </div>
+
+        <div style="min-width:260px">
+            <form method="GET" action="{{ url_for('search') }}">
+                <input name="query" placeholder="Search songs, artists..." style="width:320px;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--card-border);color:var(--muted)">
+                <button class="btn" style="margin-left:8px">Search</button>
+            </form>
+            <p class="muted" style="margin-top:8px">Tip: Try searching by artist or title. Logged-in users get personalized suggestions below.</p>
+        </div>
+    </div>
+</section>
+
+<div style="height:18px"></div>
+
+<div class="row">
+    <div class="col">
+        <div class="glass-card">
+            <h3>Featured Genres</h3>
+            <div class="row" style="gap:8px;margin-top:8px;">
+                {% for g in featured_genres %}
+                    <a href="{{ url_for('index') }}?genre={{ g }}" class="btn secondary">{{ g|title }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top:14px">
+            <h3>Popular Tracks</h3>
+            <ul>
+                {% for s in popular %}
+                    <li>
+                        <strong>{{ s.title }}</strong> — <span class="muted">{{ s.artist }}</span>
+                        <span class="muted">({{ s.count }} adds)</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="glass-card">
+            <h3>{% if is_personal_rec %}Recommended for you{% else %}Suggestions & Popular Picks{% endif %}</h3>
+            {% if is_personal_rec %}
+                <p class="muted">Based on your playlists — enjoy these picks.</p>
+            {% else %}
+                {% if current_user.is_authenticated %}
+                    <p class="muted">We couldn't build personalized recommendations yet. Here are popular tracks you might like.</p>
+                {% else %}
+                    <p class="muted">Sign in and build playlists to get personalized recommendations.</p>
+                {% endif %}
+            {% endif %}
+
+            {% if recommendations %}
+                <ul>
+                {% for r in recommendations[:8] %}
+                    <li>
+                        <strong>{{ r.title }}</strong>
+                        <div class="muted">{{ r.artist }} — {{ r.genre|title }}{% if r['pop'] %} · {{ r['pop'] }} adds{% endif %}</div>
+                        {% if current_user.is_authenticated and current_user_playlists %}
+                            <div style="margin-top:8px">
+                                <form method="POST" action="{{ url_for('add_song_to_playlist') }}" class="add-to-playlist-form">
+                                    <input type="hidden" name="song_row_id" value="{{ r.row_id }}">
+                                    <select name="playlist_id">
+                                        {% for p in current_user_playlists %}
+                                            <option value="{{ p.id }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn" type="submit">Add</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="muted">No suggestions available right now.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="height:18px"></div>
+
+    <div class="glass-card">
+    <h3>{% if selected_genre %}Tracks in {{ selected_genre }}{% else %}Browse All Tracks{% endif %}</h3>
+    <table>
+        <thead>
+            <tr><th>Title</th><th>Artist</th><th>Genre</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for t in tracks[:20] %}
+                <tr>
+                    <td>{{ t.track_name }}</td>
+                    <td class="muted">{{ t.artists }}</td>
+                    <td class="muted">{{ t.track_genre }}</td>
+                    <td>
+                        {% if current_user.is_authenticated and current_user_playlists %}
+                            <form method="POST" action="{{ url_for('add_song_to_playlist') }}" class="add-to-playlist-form" style="display:flex;gap:8px;align-items:center">
+                                <input type="hidden" name="song_row_id" value="{{ t.row_id }}">
+                                <select name="playlist_id">
+                                    {% for p in current_user_playlists %}
+                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn" type="submit">Add</button>
+                            </form>
+                        {% elif not current_user.is_authenticated %}
+                            <a href="{{ url_for('login') }}" class="muted">Log in to add</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

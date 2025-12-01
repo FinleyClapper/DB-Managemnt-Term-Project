@@ -57,8 +57,14 @@
 <h3>Your Playlists</h3>
 <ul>
     {% for pl in playlists %}
-    <li>
-        <strong>{{ pl.name }}</strong> — {{ pl.songs|length }} songs
+    <li style="margin-bottom:8px">
+        <strong>{{ pl.name }}</strong> — <span class="muted">{{ pl.song_count or 0 }} songs</span>
+        <div style="display:inline-block;margin-left:12px">
+            <a class="btn" href="{{ url_for('edit_playlist', playlist_id=pl.id) }}">Edit</a>
+            <form method="POST" action="{{ url_for('delete_playlist', playlist_id=pl.id) }}" style="display:inline-block;margin-left:6px">
+                <button class="btn secondary" type="submit">Delete</button>
+            </form>
+        </div>
     </li>
     {% else %}
     <li>No playlists yet. Create one above!</li>

@@ -1,5 +1,0 @@
-Kaggle
-pandas
-python-dotenv
-flask
-sqlalchemy

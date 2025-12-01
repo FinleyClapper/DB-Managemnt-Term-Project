@@ -9,6 +9,31 @@
         <button type="submit">Search</button>
 </form>
 
+{% if current_user.is_authenticated and suggestions %}
+    <div class="glass-card" style="margin-top:12px">
+        <h3>Suggestions for you</h3>
+        <ul>
+            {% for s in suggestions %}
+                <li>
+                    <strong>{{ s.title }}</strong>
+                    <div class="muted">{{ s.artist }} — {{ s.genre }}</div>
+                    <div style="margin-top:6px">
+                        <form method="POST" action="{{ url_for('add_song_to_playlist') }}" class="add-to-playlist-form">
+                            <input type="hidden" name="song_row_id" value="{{ s.row_id }}">
+                            <select name="playlist_id">
+                                {% for p in playlists %}
+                                    <option value="{{ p.id }}">{{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn" type="submit">Add</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
 {% if results %}
     <h3>Results:</h3>
     <table>
@@ -17,13 +42,29 @@
             <th>Artist</th>
             <th>Genre</th>
             <th>Duration</th>
+            <th></th>
         </tr>
         {% for song in results %}
             <tr>
                 <td>{{ song.title }}</td>
                 <td>{{ song.artist }}</td>
-                <td>{{ song.genre or 'N/A' }}</td>
+                    <td>{% if song.genre %}{{ song.genre|title }}{% else %}N/A{% endif %}</td>
                 <td>{{ song.duration }} sec</td>
+                <td>
+                    {% if current_user.is_authenticated and playlists %}
+                        <form method="POST" action="{{ url_for('add_song_to_playlist') }}" class="add-to-playlist-form">
+                            <input type="hidden" name="song_row_id" value="{{ song.row_id if song.row_id is defined else song.get('row_id','') }}">
+                            <select name="playlist_id" style="margin-right:8px">
+                                {% for p in playlists %}
+                                    <option value="{{ p.id }}">{{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn">Add</button>
+                        </form>
+                    {% elif not current_user.is_authenticated %}
+                        <a href="{{ url_for('login') }}">Log in to add</a>
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
     </table>
