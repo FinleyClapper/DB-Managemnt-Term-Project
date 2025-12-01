@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, abort, flash
 from dotenv import load_dotenv
 import pandas as pd
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -70,6 +70,7 @@ def load_user(user_id):
 
 #Load dataset with pandas
 df = pd.read_csv(dataset_path)
+df = df.reset_index().rename(columns={'index': 'row_id'})  # Add stable row_id
 print("Shape:", df.shape)
 print("Columns:", df.columns.tolist())
 #print(df.head())
@@ -89,6 +90,13 @@ users = Table(
     Column("email", String, nullable=False),
     Column("password", String, nullable=False)
 )
+playlist_songs = Table(
+    "playlist_songs",
+    metadata,
+    Column("playlist_id", Integer, primary_key=True),
+    Column("song_row_id", Integer, primary_key=True),  # refers to row number in CSV (or add real song ID later)
+    Column("position", Integer, nullable=False, default=0)
+)
 
 metadata.create_all(eng)
 # === MIGRATION: Add user_id column if it doesn't exist yet ===
@@ -101,7 +109,6 @@ with eng.connect() as conn:
             conn.execute(text("ALTER TABLE playlists ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1"))
             conn.commit()
             print("Migration complete!")
-playlists = []
 
 #define routes
 @app.route('/')
@@ -116,19 +123,138 @@ def index():
         selected_genre=selected_genre
     )
 
-# Flask serves "search.html" template When someone visits /search
-@app.route('/search', methods=['GET', 'POST'])
-def search():
-    results = []
+@app.route('/playlist/<int:playlist_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_playlist(playlist_id):
+    # === Fetch playlist ===
+    with eng.begin() as conn:
+        pl_row = conn.execute(
+            text("SELECT id, name, user_id FROM playlists WHERE id = :id"),
+            {"id": playlist_id}
+        ).fetchone()
+
+    if not pl_row or pl_row.user_id != current_user.id:
+        flash("Playlist not found or access denied", "danger")
+        return redirect(url_for('account'))
+
+    playlist = pl_row._mapping
+
+    # === Handle POST actions ===
     if request.method == 'POST':
-        query = request.form.get('query', '').lower()
-        results_df = df[df['track_name'].str.lower().str.contains(query) | df['artists'].str.lower().str.contains(query)]
-        results = results_df[['track_name','artists','track_genre','duration_ms']].rename(
-            columns={'track_name':'title','artists':'artist','track_genre':'genre','duration_ms':'duration'}
-        ).to_dict(orient='records')
-        for r in results:  # Convert duration from ms to sec
-            r['duration'] = int(r['duration'] / 1000)
-    return render_template('search.html', results=results)
+        action = request.form.get('action')
+
+        if action == 'rename':
+            new_name = request.form.get('playlist_name', '').strip()
+            if new_name and new_name != playlist['name']:
+                with eng.begin() as conn:
+                    conn.execute(
+                        text("UPDATE playlists SET name = :name WHERE id = :id"),
+                        {"name": new_name, "id": playlist_id}
+                    )
+                flash("Playlist renamed!", "success")
+
+        elif action == 'add_song':
+            song_row_id = int(request.form.get('song_row_id'))
+            with eng.begin() as conn:
+                # Avoid duplicates
+                exists = conn.execute(
+                    text("SELECT 1 FROM playlist_songs WHERE playlist_id = :pid AND song_row_id = :sid"),
+                    {"pid": playlist_id, "sid": song_row_id}
+                ).fetchone()
+                if not exists:
+                    # Get next position
+                    max_pos = conn.execute(
+                        text("SELECT MAX(position) FROM playlist_songs WHERE playlist_id = :pid"),
+                        {"pid": playlist_id}
+                    ).scalar() or -1
+                    conn.execute(
+                        text("INSERT INTO playlist_songs (playlist_id, song_row_id, position) VALUES (:pid, :sid, :pos)"),
+                        {"pid": playlist_id, "sid": song_row_id, "pos": max_pos + 1}
+                    )
+                    flash("Song added!", "success")
+
+        elif action == 'remove_song':
+            song_row_id = int(request.form.get('song_row_id'))
+            with eng.begin() as conn:
+                conn.execute(
+                    text("DELETE FROM playlist_songs WHERE playlist_id = :pid AND song_row_id = :sid"),
+                    {"pid": playlist_id, "sid": song_row_id}
+                )
+            flash("Song removed", "info")
+
+        return redirect(url_for('edit_playlist', playlist_id=playlist_id))
+
+# === Search functionality ===
+    search_results = []
+    query = request.args.get('q', '').strip().lower()
+    if query:
+        mask = (
+            df['track_name'].str.contains(query, case=False, na=False) |
+            df['artists'].str.contains(query, case=False, na=False)
+        )
+        results_df = df[mask].copy()
+        results_df['duration'] = (results_df['duration_ms'] / 1000).astype(int)
+        temp_list = results_df[['track_name', 'artists', 'track_genre', 'duration_ms']].rename(columns={
+            'track_name': 'title',
+            'artists': 'artist',
+            'track_genre': 'genre'
+        }).to_dict(orient='records')
+
+        # Add the real pandas index (row_id) to each result
+        for i, row in enumerate(temp_list):
+            pandas_index = results_df.iloc[i].name  # this is the real row_id
+            row['duration'] = int(row['duration_ms'] / 1000)
+            row['row_id'] = pandas_index
+            del row['duration_ms']
+            search_results.append(row)
+
+# === Load current songs in playlist (using pandas — no SQL join needed!) ===
+    with eng.begin() as conn:
+        song_ids_in_playlist = conn.execute(
+            text("SELECT song_row_id FROM playlist_songs WHERE playlist_id = :pid ORDER BY position"),
+            {"pid": playlist_id}
+        ).fetchall()
+
+    current_songs = []
+    for (song_row_id,) in song_ids_in_playlist:
+        if song_row_id in df.index:  # safety check
+            row = df.loc[song_row_id]
+            current_songs.append({
+                'title': row['track_name'],
+                'artist': row['artists'],
+                'genre': row['track_genre'],
+                'duration': int(row['duration_ms'] / 1000),
+                'row_id': song_row_id
+            })
+
+    return render_template(
+        'edit_playlist.html',
+        playlist=playlist,
+        songs=current_songs,
+        search_results=search_results,
+        query=query
+    )
+@app.route('/playlist/<int:playlist_id>/delete', methods=['POST'])
+@login_required
+def delete_playlist(playlist_id):
+    with eng.begin() as conn:
+        result = conn.execute(
+            text("SELECT user_id FROM playlists WHERE id = :id"),
+            {"id": playlist_id}
+        ).fetchone()
+
+        if not result:
+            flash("Playlist not found", "danger")
+        elif result.user_id != current_user.id:
+            flash("Not your playlist!", "danger")
+        else:
+            conn.execute(
+                text("DELETE FROM playlists WHERE id = :id"),
+                {"id": playlist_id}
+            )
+            flash("Playlist deleted!", "success")
+
+    return redirect(url_for('account'))
 
 @app.route('/playlist', methods=['GET', 'POST'])
 @login_required  # ← Important! Only logged-in users can create playlists
@@ -174,6 +300,21 @@ def playlist():
         songs=songs,
         playlists=rows
     )
+
+# Flask serves "search.html" template When someone visits /search
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    results = []
+    if request.method == 'POST':
+        query = request.form.get('query', '').lower()
+        results_df = df[df['track_name'].str.lower().str.contains(query) | df['artists'].str.lower().str.contains(query)]
+        results = results_df[['track_name','artists','track_genre','duration_ms']].rename(
+            columns={'track_name':'title','artists':'artist','track_genre':'genre','duration_ms':'duration'}
+        ).to_dict(orient='records')
+        for r in results:  # Convert duration from ms to sec
+            r['duration'] = int(r['duration'] / 1000)
+    return render_template('search.html', results=results)
+
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
@@ -268,21 +409,27 @@ def register():
 @login_required
 def account():
     with eng.begin() as conn:
-        rows = conn.execute(
-            text("SELECT id, name FROM playlists WHERE user_id = :user_id"),
-            {"user_id": current_user.id}
-        ).fetchall()
-    return render_template('account.html', playlists=rows)
+        # Get playlists + song count in ONE query (super fast)
+        rows = conn.execute(text("""
+            SELECT 
+                p.id, 
+                p.name, 
+                COUNT(ps.song_row_id) as song_count
+            FROM playlists p
+            LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
+            WHERE p.user_id = :user_id
+            GROUP BY p.id, p.name
+            ORDER BY p.id DESC
+        """), {"user_id": current_user.id}).fetchall()
 
-@app.route('/playlist/<int:playlist_id>/edit')
-def edit_playlist(playlist_id):
-    # TODO: implement edit functionality
-    return f"Edit playlist {playlist_id} (not implemented yet)"
+    # Convert to list of dicts for easier template use
+    playlists = [
+        {"id": r.id, "name": r.name, "song_count": r.song_count or 0}
+        for r in rows
+    ]
 
-@app.route('/playlist/<int:playlist_id>/delete')
-def delete_playlist(playlist_id):
-    # TODO: implement delete functionality
-    return f"Delete playlist {playlist_id} (not implemented yet)"
+    return render_template('account.html', playlists=playlists)
+
 
 @app.route('/debug-users')
 def debug_users():
